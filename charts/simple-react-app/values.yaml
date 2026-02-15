@@ -8,6 +8,7 @@ image:
 
 service:
   port: 80
+  containerPort: 80
 
 ingress:
   enabled: true
