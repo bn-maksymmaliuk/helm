@@ -17,34 +17,50 @@ jobs:
 
     steps:
 
+      # 🔹 Checkout
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 🔹 Helm install
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.17.0
 
+      # 🔹 Login GHCR
       - name: Login to GHCR
         run: |
           echo "${{ secrets.GHCR_TOKEN }}" | helm registry login ghcr.io \
             --username ${{ github.actor }} \
             --password-stdin
 
-      - name: Helm Lint
+      # 🔹 Detect charts
+      - name: Detect Charts
+        id: charts
         run: |
-          for chart in charts/*; do
+          CHARTS=$(find charts -maxdepth 1 -mindepth 1 -type d)
+          echo "charts=$CHARTS" >> $GITHUB_OUTPUT
+
+      # 🔹 Helm Lint
+      - name: Helm Lint
+        if: steps.charts.outputs.charts != ''
+        run: |
+          for chart in ${{ steps.charts.outputs.charts }}; do
             helm lint "$chart"
           done
 
+      # 🔹 Helm Package
       - name: Helm Package
+        if: steps.charts.outputs.charts != ''
         run: |
           mkdir -p packaged
-          for chart in charts/*; do
+          for chart in ${{ steps.charts.outputs.charts }}; do
             helm package "$chart" --destination packaged
           done
 
+      # 🔹 Helm Push
       - name: Helm Push
+        if: steps.charts.outputs.charts != ''
         run: |
           for chart in packaged/*.tgz; do
             helm push "$chart" oci://ghcr.io/${{ github.repository_owner }}/charts
