@@ -1,0 +1,51 @@
+name: Helm Charts Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | helm registry login ghcr.io \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Helm Lint
+        run: |
+          for chart in charts/*; do
+            helm lint "$chart"
+          done
+
+      - name: Helm Package
+        run: |
+          mkdir -p packaged
+          for chart in charts/*; do
+            helm package "$chart" --destination packaged
+          done
+
+      - name: Helm Push
+        run: |
+          for chart in packaged/*.tgz; do
+            helm push "$chart" oci://ghcr.io/${{ github.repository_owner }}/charts
+          done

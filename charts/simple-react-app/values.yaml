@@ -1,0 +1,24 @@
+app:
+  name: app
+
+image:
+  repository: nginx
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  host: app.local
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+  limits:
+    cpu: 200m
+    memory: 128Mi
