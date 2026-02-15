@@ -1,11 +1,8 @@
 name: Helm Charts Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
+  release:
+    types: [published]
 
 jobs:
   release:
